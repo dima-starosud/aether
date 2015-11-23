@@ -1,3 +1,3 @@
 defmodule Aether.Wave do
-	defstruct [:type, :data]
+	defstruct [:meta, :data]
 end

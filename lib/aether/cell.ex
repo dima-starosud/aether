@@ -9,16 +9,16 @@ defmodule Aether.Cell do
 		defstruct [:to, :after, :wave]
 	end
 
+	def start_link(id, handler, waves \\ []) do
+		GenServer.start_link(Cell, [id, handler, waves])
+	end
+
 	def init([id, handler, waves]) do
 		me = self()
 		{^me, _} = :gproc.reg_or_locate({:n, :l, id})
 		state = %Cell{id: id, handler: wrap_handler(handler)}
-		schedule_radiation(id, waves)
+		schedule_radiation(id, Enum.map(waves, &(%Radiate{to: id, wave: &1})))
 		{:ok, state}
-	end
-
-	def init([id, handler]) do
-		init([id, handler, []])
 	end
 
 	defp wrap_handler({m, f, a}), do: &apply(m, f, a ++ [&1, &2])
@@ -32,6 +32,7 @@ defmodule Aether.Cell do
 	end
 
 	defp schedule_radiation(from, radiations) do
+		Logger.info("Schedule radiations #{inspect radiations} from #{inspect from}")
 		for r <- radiations do
 			:timer.apply_after(r.after || 0, 
 												 :erlang, :apply,
