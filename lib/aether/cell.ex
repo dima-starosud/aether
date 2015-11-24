@@ -14,6 +14,7 @@ defmodule Aether.Cell do
 	end
 
 	def init([id, handler, waves]) do
+		Logger.info("New cell #{inspect id} initialization with #{inspect handler}. Initial waves: #{inspect waves}")
 		me = self()
 		{^me, _} = :gproc.reg_or_locate({:n, :l, id})
 		state = %Cell{id: id, handler: wrap_handler(handler)}
@@ -25,6 +26,7 @@ defmodule Aether.Cell do
 	defp wrap_handler(f) when is_function(f, 2), do: f
 
 	defp radiate_wave(from, to, wave) do
+		Logger.info("Radiation #{inspect from} >===#{inspect wave}===> #{inspect to}")
 		for pid <- :gproc.lookup_pids({:n, :l, to}) do
 			GenServer.cast(pid, {:wave, from, wave})
 		end
@@ -46,6 +48,7 @@ defmodule Aether.Cell do
 	end
 
 	def handle_cast({:wave, from, wave}, state) do
+		Logger.info("Received wave #{inspect wave} from #{inspect from}.")
 		{handler, radiations} = state.handler.(from, wave)
 		state = %Cell{state | handler: wrap_handler(handler || state.handler)}
 		schedule_radiation(state.id, radiations)
