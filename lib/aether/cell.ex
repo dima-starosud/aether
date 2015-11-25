@@ -5,20 +5,16 @@ defmodule Aether.Cell do
 	alias __MODULE__
 	defstruct [:id, :handler]
 
-	defmodule Radiate do
-		defstruct [:to, :after, :wave]
+	def start_link(id, handler, radiations \\ []) do
+		GenServer.start_link(Cell, [id, handler, radiations])
 	end
 
-	def start_link(id, handler, waves \\ []) do
-		GenServer.start_link(Cell, [id, handler, waves])
-	end
-
-	def init([id, handler, waves]) do
-		Logger.info("New cell #{inspect id} initialization with #{inspect handler}. Initial waves: #{inspect waves}")
+	def init([id, handler, radiations]) do
+		Logger.info("New cell #{inspect id} initialization with #{inspect handler}. Initial radiations: #{inspect radiations}")
 		me = self()
 		{^me, _} = :gproc.reg_or_locate({:n, :l, id})
 		state = %Cell{id: id, handler: wrap_handler(handler)}
-		schedule_radiation(id, Enum.map(waves, &(%Radiate{to: id, wave: &1})))
+		schedule_radiation(id, radiations)
 		{:ok, state}
 	end
 
@@ -26,7 +22,7 @@ defmodule Aether.Cell do
 	defp wrap_handler(f) when is_function(f, 2), do: f
 
 	defp radiate_wave(from, to, wave) do
-		Logger.info("Radiation #{inspect from} >===#{inspect wave}===> #{inspect to}")
+		Logger.info("Radiation #{inspect from} ===> #{inspect wave} ===> #{inspect to}")
 		for pid <- :gproc.lookup_pids({:n, :l, to}) do
 			GenServer.cast(pid, {:wave, from, wave})
 		end
