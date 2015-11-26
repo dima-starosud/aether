@@ -44,6 +44,15 @@ defmodule AetherTest.CellTest do
 		assert_receive ^wave2two
 	end
 
+	test "cell id is unique" do
+		start_cell = fn ->
+			GenServer.start(Aether.Cell, [:some_unique_id, fn _, _ -> {nil, []} end, []])
+		end
+		{:ok, pid} = start_cell.()
+		on_exit killer(pid)
+		assert match? {:error, _}, start_cell.()
+	end
+
 	def redirect(pid, mock \\ []) do
 		fn _from, wave ->
 			send(pid, wave)
