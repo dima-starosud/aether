@@ -5,6 +5,10 @@ defmodule Aether.Cell do
 	alias __MODULE__
 	defstruct [:id, :handler]
 
+	def start(id, handler, radiations \\ []) do
+		GenServer.start(Cell, [id, handler, radiations])
+	end
+
 	def start_link(id, handler, radiations \\ []) do
 		GenServer.start_link(Cell, [id, handler, radiations])
 	end

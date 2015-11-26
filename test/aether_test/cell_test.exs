@@ -46,7 +46,7 @@ defmodule AetherTest.CellTest do
 
 	test "cell id is unique" do
 		start_cell = fn ->
-			GenServer.start(Aether.Cell, [:some_unique_id, fn _, _ -> {nil, []} end, []])
+			Aether.Cell.start(:some_unique_id, fn _, _ -> {nil, []} end)
 		end
 		{:ok, pid} = start_cell.()
 		on_exit killer(pid)
