@@ -25,10 +25,41 @@ defmodule AetherTest.CellTest do
 		assert_receive ^expected2
 	end
 
+	test "cell changes its handler if needed" do
+		radiate = %Aether.Radiate{to: :unique_id, wave: :some_dummy_wave}
+		expected = {:done, ref = make_ref()}
+		{:ok, pid} = Aether.Cell.start_link(:unique_id, counter(self(), ref, 3), [radiate])
+		on_exit killer(pid)
+		assert_receive ^expected
+	end
+
+	test "cells communicate to each other" do
+		wave2two = make_ref()
+		wave2one = make_ref()
+		{:ok, pid} = Aether.Cell.start_link(:one, redirect(self(), [%Aether.Radiate{to: :two, wave: wave2two}]))
+		on_exit killer(pid)
+		{:ok, pid} = Aether.Cell.start_link(:two, redirect(self()), [%Aether.Radiate{to: :one, wave: wave2one}])
+		on_exit killer(pid)
+		assert_receive ^wave2one
+		assert_receive ^wave2two
+	end
+
 	def redirect(pid, mock \\ []) do
 		fn _from, wave ->
 			send(pid, wave)
 			{nil, mock}
+		end
+	end
+
+	def counter(pid, ref, n) do
+		fn from, wave ->
+			n = n - 1
+			if n == 0 do
+				send(pid, {:done, ref})
+				{nil, []}
+			else
+				{counter(pid, ref, n), [%Aether.Radiate{to: from, wave: wave}]}
+			end
 		end
 	end
 
