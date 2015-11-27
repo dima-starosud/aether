@@ -27,15 +27,15 @@ defmodule AetherTest.CellTest do
 
 	test "cell changes its handler if needed" do
 		radiate = %Aether.Radiate{to: :unique_id, wave: :some_dummy_wave}
-		expected = {:done, ref = make_ref()}
+		expected = {:done, ref = make_ref}
 		{:ok, pid} = Aether.Cell.start_link(:unique_id, counter(self(), ref, 3), [radiate])
 		on_exit killer(pid)
 		assert_receive ^expected
 	end
 
 	test "cells communicate to each other" do
-		wave2two = make_ref()
-		wave2one = make_ref()
+		wave2two = make_ref
+		wave2one = make_ref
 		{:ok, pid} = Aether.Cell.start_link(:one, redirect(self(), [%Aether.Radiate{to: :two, wave: wave2two}]))
 		on_exit killer(pid)
 		{:ok, pid} = Aether.Cell.start_link(:two, redirect(self()), [%Aether.Radiate{to: :one, wave: wave2one}])
