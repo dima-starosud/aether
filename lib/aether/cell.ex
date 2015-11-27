@@ -44,13 +44,13 @@ defmodule Aether.Cell do
 		{:noreply, state}
 	end
 
-	def handle_cast({:wave, from, wave}, state) do
-		Logger.info("Received wave #{inspect wave} from #{inspect from}.")
-		{handler, radiations} = state.handler.(from, wave)
-		state = %Cell{state | handler: handler || state.handler}
-		schedule_radiation(state.id, radiations)
-		{:noreply, state}
-	end
+  def handle_cast({:wave, from, wave}, state) do
+    Logger.info("Received wave #{inspect wave} from #{inspect from}.")
+    {handler, radiations} = state.handler.(from, wave)
+    if handler, do: state = %Cell{state | handler: handler}
+    schedule_radiation(state.id, radiations)
+    {:noreply, state}
+  end
 
 	def handle_cast(any, state) do
 		Logger.warn("Unknown cast message: #{inspect any}")
