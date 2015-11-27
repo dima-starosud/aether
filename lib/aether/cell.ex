@@ -22,8 +22,8 @@ defmodule Aether.Cell do
 		{:ok, state}
 	end
 
-	defp wrap_handler({m, f, a}), do: &apply(m, f, a ++ [&1, &2])
-	defp wrap_handler(f) when is_function(f, 2), do: f
+  # two arguments functions is only supported
+  defp wrap_handler(f) when is_function(f, 2), do: f
 
 	defp radiate_wave(from, to, wave) do
 		Logger.info("Radiation #{inspect from} ===> #{inspect wave} ===> #{inspect to}")
