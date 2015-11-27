@@ -17,13 +17,10 @@ defmodule Aether.Cell do
 		Logger.info("New cell #{inspect id} initialization with #{inspect handler}. Initial radiations: #{inspect radiations}")
 		me = self()
 		{^me, _} = :gproc.reg_or_locate({:n, :l, id})
-		state = %Cell{id: id, handler: wrap_handler(handler)}
+		state = %Cell{id: id, handler: handler}
 		schedule_radiation(id, radiations)
 		{:ok, state}
 	end
-
-  # two arguments functions is only supported
-  defp wrap_handler(f) when is_function(f, 2), do: f
 
 	defp radiate_wave(from, to, wave) do
 		Logger.info("Radiation #{inspect from} ===> #{inspect wave} ===> #{inspect to}")
@@ -50,7 +47,7 @@ defmodule Aether.Cell do
 	def handle_cast({:wave, from, wave}, state) do
 		Logger.info("Received wave #{inspect wave} from #{inspect from}.")
 		{handler, radiations} = state.handler.(from, wave)
-		state = %Cell{state | handler: wrap_handler(handler || state.handler)}
+		state = %Cell{state | handler: handler || state.handler}
 		schedule_radiation(state.id, radiations)
 		{:noreply, state}
 	end
