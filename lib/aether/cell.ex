@@ -13,22 +13,24 @@ defmodule Aether.Cell do
 		GenServer.start_link(Cell, [id, handler, radiations])
 	end
 
-	def init([id, handler, radiations]) do
-		Logger.info("New cell #{inspect id} initialization with #{inspect handler}. Initial radiations: #{inspect radiations}")
-		me = self()
-		{^me, _} = :gproc.reg_or_locate({:n, :l, id})
-		state = %Cell{id: id, handler: handler}
-		schedule_radiation(id, radiations)
-		{:ok, state}
-	end
+  def init([id, handler, radiations]) do
+    Logger.info("New cell #{inspect id} initialization with #{inspect handler}. Initial radiations: #{inspect radiations}")
+    true = :gproc.add_local_name(id)
+    state = %Cell{id: id, handler: handler}
+    schedule_radiation(id, radiations)
+    {:ok, state}
+  end
 
-	defp radiate_wave(from, to, wave) do
-		Logger.info("Radiation #{inspect from} ===> #{inspect wave} ===> #{inspect to}")
-		for pid <- :gproc.lookup_pids({:n, :l, to}) do
-			GenServer.cast(pid, {:wave, from, wave})
-		end
-		:ok
-	end
+  defp radiate_wave(from, to, wave) do
+    Logger.info("Radiation #{inspect from} ===> #{inspect wave} ===> #{inspect to}")
+    case :gproc.lookup_local_name(to) do
+      :undefined ->
+        Logger.warn("Radiation failed. Cell #{to} currently unavailable.")
+      pid ->
+        GenServer.cast(pid, {:wave, from, wave})
+    end
+    :ok
+  end
 
 	defp schedule_radiation(from, radiations) do
 		Logger.info("Schedule radiations #{inspect radiations} from #{inspect from}")
