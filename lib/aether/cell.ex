@@ -25,7 +25,7 @@ defmodule Aether.Cell do
     Logger.info("Radiation #{inspect from} ===> #{inspect wave} ===> #{inspect to}")
     case :gproc.lookup_local_name(to) do
       :undefined ->
-        Logger.warn("Radiation failed. Cell #{to} currently unavailable.")
+        Logger.warn("Radiation failed. Cell #{inspect to} currently unavailable.")
       pid ->
         GenServer.cast(pid, {:wave, from, wave})
     end
