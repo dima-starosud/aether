@@ -13,7 +13,14 @@ defmodule Aether.Cell do
     GenServer.start_link(Cell, [id, handler, radiations])
   end
 
+  defmacrop listener_prop(id) do
+    quote do
+      {:p, :l, {:listen_to, unquote(id)}}
+    end
+  end
+
   def subscribe(id) do
+    true = :gproc.reg(listener_prop(id))
     :ok
   end
 
@@ -27,6 +34,7 @@ defmodule Aether.Cell do
 
   defp radiate_wave(from, to, wave) do
     Logger.info("Radiation #{inspect from} ===> #{inspect wave} ===> #{inspect to}")
+    :gproc.send(listener_prop(from), {:radiation, from, to, wave})
     case :gproc.lookup_local_name(to) do
       :undefined ->
         Logger.warn("Radiation failed. Cell #{inspect to} currently unavailable.")
