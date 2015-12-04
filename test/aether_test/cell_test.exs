@@ -53,6 +53,15 @@ defmodule AetherTest.CellTest do
 		assert match? {:error, _}, start_cell.()
 	end
 
+  test "listener reports messages" do
+    from = :unique_id
+    to = :some_other_cell
+    wave = make_ref
+    :ok = Aether.Cell.subscribe(from)
+    {:ok, pid} = Aether.Cell.start_link(from, redirect(self()), [%Aether.Radiate{to: to, wave: wave}])
+    assert_receive {:radiation, ^from, ^to, ^wave}
+  end
+
 	def redirect(pid, mock \\ []) do
 		fn _from, wave ->
 			send(pid, wave)

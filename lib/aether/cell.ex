@@ -13,6 +13,10 @@ defmodule Aether.Cell do
     GenServer.start_link(Cell, [id, handler, radiations])
   end
 
+  def subscribe(id) do
+    :ok
+  end
+
   def init([id, handler, radiations]) do
     Logger.info("New cell #{inspect id} initialization with #{inspect handler}. Initial radiations: #{inspect radiations}")
     true = :gproc.add_local_name(id)
