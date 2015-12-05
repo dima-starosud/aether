@@ -1,1 +1,2 @@
-%{"gproc": {:hex, :gproc, "0.3.1"}}
+%{"dialyze": {:hex, :dialyze, "0.2.0"},
+  "gproc": {:hex, :gproc, "0.3.1"}}

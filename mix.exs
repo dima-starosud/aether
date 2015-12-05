@@ -28,6 +28,9 @@ defmodule Aether.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:gproc, "0.3.1"}]
+    [
+      {:gproc, "0.3.1"},
+      {:dialyze, "~> 0.2.0"}
+    ]
   end
 end
