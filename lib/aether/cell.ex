@@ -57,7 +57,7 @@ defmodule Aether.Cell do
 
   def handle_cast({:wave, from, wave}, state) do
     Logger.info("Received wave #{inspect wave} from #{inspect from}.")
-    {handler, radiations} = state.handler.(from, wave)
+    {handler, radiations} = state.handler.(from, state.id, wave)
     if handler do
       state = %Cell{state | handler: handler}
     end

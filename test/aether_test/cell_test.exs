@@ -57,14 +57,14 @@ defmodule AetherTest.CellTest do
   end
 
 	def redirect(pid, mock \\ []) do
-		fn _from, wave ->
+		fn _from, _to, wave ->
 			send(pid, wave)
 			{nil, mock}
 		end
 	end
 
 	def counter(pid, ref, n) do
-		fn from, wave ->
+		fn from, _to, wave ->
 			n = n - 1
 			if n == 0 do
 				send(pid, {:done, ref})
