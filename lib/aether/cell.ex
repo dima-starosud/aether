@@ -15,7 +15,13 @@ defmodule Aether.Cell do
 
   defmacrop listener_prop(id) do
     quote do
-      {:p, :l, {:listen_to, unquote(id)}}
+      {:p, :l, {Cell, :listener, unquote(id)}}
+    end
+  end
+
+  defmacrop cell_name(id) do
+    quote do
+      {Cell, :instance, unquote(id)}
     end
   end
 
@@ -26,7 +32,7 @@ defmodule Aether.Cell do
 
   def init([id, handler, radiations]) do
     Logger.info("New cell #{inspect id} initialization with #{inspect handler}. Initial radiations: #{inspect radiations}")
-    true = :gproc.add_local_name(id)
+    true = :gproc.add_local_name(cell_name(id))
     state = %Cell{id: id, handler: handler}
     schedule_radiation(id, radiations)
     {:ok, state}
@@ -35,7 +41,7 @@ defmodule Aether.Cell do
   defp radiate_wave(from, to, wave) do
     Logger.info("Radiation #{inspect from} ===> #{inspect wave} ===> #{inspect to}")
     :gproc.send(listener_prop(from), {:radiation, from, to, wave})
-    case :gproc.lookup_local_name(to) do
+    case :gproc.lookup_local_name(cell_name(to)) do
       :undefined ->
         Logger.warn("Radiation failed. Cell #{inspect to} currently unavailable.")
       pid ->
