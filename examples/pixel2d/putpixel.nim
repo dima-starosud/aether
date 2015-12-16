@@ -4,6 +4,16 @@ from sdl import nil
 from parseutils import nil
 import sequtils
 from strutils import split
+from tuples import staticMap
+
+template asTuple(list: expr, length: int): expr =
+  let
+    xs = list
+    length0 = len(xs)
+  if len(xs) != length:
+    raise newException(ValueError, "Expected " & $length & " items, got " & $length0)
+  template getItem(i: int): expr = xs[i]
+  (0 ..< length).staticMap(getItem)
 
 proc parseInt(s: string): int =
   if parseutils.parseInt(s, result, 0) != len(s):
@@ -13,14 +23,11 @@ proc splitInts(s: string): seq[int] =
   s.split.filterIt(it != "").map(parseInt)
 
 let
-  nums = stdin.readLine.splitInts
-  ss = newScreenSurface(nums[0], nums[1])
+  (w, h) = stdin.readLine.splitInts.asTuple(2)
+  ss = newScreenSurface(w, h)
 
 for line in stdin.lines:
   let
-    data = line.splitInts
-    x = data[0]
-    y = data[1]
-    c = colors.Color(data[2])
-  ss[x, y] = c
+    (x, y, c) = line.splitInts.asTuple(3)
+  ss[x, y] = colors.Color(c)
   sdl.updateRect(ss.s, 0, 0, 0, 0)
