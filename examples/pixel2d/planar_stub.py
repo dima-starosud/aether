@@ -35,18 +35,6 @@ class Particle:
     def move(self):
         return next(self.points)
 
-X = 640
-Y = 480
-
-P0 = (X//2, Y//2)
-Z = 200
-ps = [Particle(0xFFFFFF, P0, (x1, y1))
-      for x1 in range(0, X, Z)
-      for y1 in range(0, Y, Z)
-      if (x1, y1) != P0]
-
-#ps = [Particle(0xFFFFFF, P0, (X//4, Y//3))]
-
 def vertical(dx, dy):
     return (-dx, dy)
 
@@ -70,18 +58,33 @@ def createMirrorPoints(x0, y0, x1, y1):
     else:
         m = createMirror(dx, dy)
     p1 = (x1, y1)
-    return [(p, m) for p in itertools.takewhile(lambda p: p != p1, line(x0, y0, x1, y1, reflect = False))]
+    return ((p, m) for p in itertools.takewhile(lambda p: p != p1, line(x0, y0, x1, y1, reflect = False)))
+
+################################################
+
+X = 640
+Y = 480
+
+P0 = (X//2, Y//2)
+Z = 200
+ps = [Particle(0xFFFFFF, P0, (x1, y1))
+      for x1 in range(0, X, Z)
+      for y1 in range(0, Y, Z)
+      if (x1, y1) != P0]
+
+P1 = (0    , Y/2  )
+P2 = (X - 1, Y/2  )
+P3 = (X/2  , 0    )
+P4 = (X/2  , Y - 1)
 
 MIRRORS = {}
-for args in [
-        (Z    , Z    , X - Z,     Z),
-        (Z    , Y - Z, X - Z, Y - Z),
-        (Z    , Z    , Z    , Y - Z),
-        (X - Z, Z    , X - Z, Y - Z)]:
+for args in [P1 + P4, P4 + P2, P2 + P3, P3 + P1]:
     MIRRORS.update(createMirrorPoints(*args))
 
 if __name__ == "__main__":
-    print 640, 480
+    print X, Y
+    for x, y in MIRRORS:
+        print x, y, 0xFF0000
     while True:
         ps1 = []
         for p in ps:
