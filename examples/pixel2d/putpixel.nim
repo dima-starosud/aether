@@ -10,7 +10,7 @@ template asTuple(list: expr, length: int): expr =
   let
     xs = list
     length0 = len(xs)
-  if len(xs) != length:
+  if length0 != length:
     raise newException(ValueError, "Expected " & $length & " items, got " & $length0)
   template getItem(i: int): expr = xs[i]
   (0 ..< length).staticMap(getItem)
