@@ -1,8 +1,9 @@
 import time
 import sys
 import math
+import itertools
 
-def line(x, y, x1, y1):
+def line(x, y, x1, y1, reflect = True):
     dx = x1 - x
     dy = y1 - y
     length = int(round(math.sqrt(dx ** 2 + dy ** 2)))
@@ -12,7 +13,7 @@ def line(x, y, x1, y1):
     point = None
     just_reflected = False
     while True:
-        mirror = MIRRORS.get(point)
+        mirror = reflect and MIRRORS.get(point)
         if mirror and not just_reflected:
             x, y = x/length, y/length
             dx, dy = mirror(dx, dy)
@@ -38,7 +39,7 @@ X = 640
 Y = 480
 
 P0 = (X//2, Y//2)
-Z = 80
+Z = 200
 ps = [Particle(0xFFFFFF, P0, (x1, y1))
       for x1 in range(0, X, Z)
       for y1 in range(0, Y, Z)
@@ -52,9 +53,32 @@ def vertical(dx, dy):
 def horizontal(dx, dy):
     return (dx, -dy)
 
-MIRRORS = dict(
-    [((x, y), vertical) for x in [Z, X - Z] for y in range(Y)] +
-    [((x, y), horizontal) for x in range(X) for y in [Z, Y - Z]])
+def createMirror(dx, dy):
+    assert dx != 0 and dy != 0
+    s = 1 if dx * dy > 0 else -1
+    kx = s * dx ** 2
+    ky = s * dy ** 2
+    return (lambda dx, dy: (dy * kx, dx * ky))
+
+def createMirrorPoints(x0, y0, x1, y1):
+    dx = x1 - x0
+    dy = y1 - y0
+    if dx == 0:
+        m = vertical
+    elif dy == 0:
+        m = horizontal
+    else:
+        m = createMirror(dx, dy)
+    p1 = (x1, y1)
+    return [(p, m) for p in itertools.takewhile(lambda p: p != p1, line(x0, y0, x1, y1, reflect = False))]
+
+MIRRORS = {}
+for args in [
+        (Z    , Z    , X - Z,     Z),
+        (Z    , Y - Z, X - Z, Y - Z),
+        (Z    , Z    , Z    , Y - Z),
+        (X - Z, Z    , X - Z, Y - Z)]:
+    MIRRORS.update(createMirrorPoints(*args))
 
 if __name__ == "__main__":
     print 640, 480
