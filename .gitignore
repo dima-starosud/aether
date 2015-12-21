@@ -9,3 +9,5 @@ nimcache
 *.exe
 
 *.pyc
+
+.idea
