@@ -5,6 +5,7 @@ from parseutils import nil
 import sequtils
 from strutils import split
 from tuples import staticMap
+from os import nil
 
 template asTuple(list: expr, length: int): expr =
   let
@@ -23,11 +24,15 @@ proc splitInts(s: string): seq[int] =
   s.split.filterIt(it != "").map(parseInt)
 
 let
-  (w, h) = stdin.readLine.splitInts.asTuple(2)
+  times = if os.paramCount() > 0: parseInt(os.paramStr(1)) else: 1
+
+let
+  (w, h) = stdin.readLine.splitInts.mapIt(it * times).asTuple(2)
   ss = newScreenSurface(w, h)
 
 for line in stdin.lines:
   let
     (x, y, c) = line.splitInts.asTuple(3)
-  ss[x, y] = colors.Color(c)
-  sdl.updateRect(ss.s, 0, 0, 0, 0)
+    rect = (x: times * x, y : times * y, width: times, height: times)
+  ss.fillRect(rect, colors.Color(c))
+  sdl.updateRect(ss.s, int32(rect.x), int32(rect.y), int32(rect.width), int32(rect.height))
