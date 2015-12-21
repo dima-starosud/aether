@@ -17,7 +17,7 @@ template asTuple(list: expr, length: int): expr =
 
 proc parseInt(s: string): int =
   if parseutils.parseInt(s, result, 0) != len(s):
-    raise newException(ValueError, "Cannot parse int from '" & s & "'.")
+    raise newException(ValueError, "Cannot parse int from '" & s & "'")
 
 proc splitInts(s: string): seq[int] =
   s.split.filterIt(it != "").map(parseInt)
