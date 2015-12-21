@@ -81,10 +81,10 @@ ps = [Particle(0xFFFFFF, P0, (x1, y1))
       for y1 in range(0, Y, Z)
       if (x1, y1) != P0]
 
-P1 = (1    , Y/2  )
-P2 = (X - 2, Y/2  )
-P3 = (X/2  , 1    )
-P4 = (X/2  , Y - 2)
+P1 = (21    , Y/2  )
+P2 = (X - 22, Y/2  )
+P3 = (X/2   , 21    )
+P4 = (X/2   , Y - 22)
 
 MIRRORS = {}
 PS = [P1 + P4, P4 + P2, P2 + P3, P3 + P1]
