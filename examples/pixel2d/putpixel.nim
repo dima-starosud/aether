@@ -21,7 +21,7 @@ proc parseInt(s: string): int =
     raise newException(ValueError, "Cannot parse int from '" & s & "'")
 
 proc splitInts(s: string): seq[int] =
-  s.split.filterIt(it != "").map(parseInt)
+  s.split.map(parseInt)
 
 let
   times = if os.paramCount() > 0: parseInt(os.paramStr(1)) else: 1
