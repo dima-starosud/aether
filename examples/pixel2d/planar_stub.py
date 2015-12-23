@@ -98,13 +98,13 @@ for x, y in MIRRORS.keys():
 if __name__ == "__main__":
     print X, Y
     for x, y in MIRRORS:
-        print x, y, 0xFF0000
+        print "permanent", x, y, 0xFF0000
     while True:
         ps1 = []
         for p in ps:
             (x, y) = p.move()
             if 0 <= x < X and 0 <= y < Y:
-                print x, y, p.color
+                print "temporary", x, y, p.color
                 ps1.append(p)
             else:
                 sys.stderr.write("Light has gone: (%s, %s)\n" % (x, y))
