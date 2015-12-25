@@ -6,6 +6,7 @@ from os import nil
 import sequtils
 import strutils
 import tuples
+import sets
 import tables
 import times
 
@@ -32,13 +33,20 @@ proc fillRect(x: int, y: int, c: Color) =
   sdl.updateRect(ss.s, int32(rect.x), int32(rect.y), int32(rect.width), int32(rect.height))
 
 
+proc newSet[A](): ref HashSet[A] =
+  new(result)
+  result[] = initSet[A]()
+
+
 type
   Pos = (int, int)
 
-
 let
   bg = newTable[Pos, Color]()
-  fg = newOrderedTable[Pos, Time]()
+
+var
+  fg1 = newSet[Pos]()
+  fg2 = newSet[Pos]()
 
 
 for line in stdin.lines:
@@ -48,8 +56,12 @@ for line in stdin.lines:
     (x, y, c0) = params.get(1..3).map(parseInt)
     p = (x, y)
     c = colors.Color(c0)
-  case kind:
-    of "permanent": bg[p] = c
-    of "temporary": fg[p] = getTime()
-    else: raise newException(ValueError, "Unexpected message kind " & kind)
   fillRect(x, y, c)
+  case kind:
+    of "permanent":
+      bg[p] = c
+    of "temporary":
+      fg1[].excl(p)
+      fg2[].incl(p)
+    else:
+      raise newException(ValueError, "Unexpected message kind " & kind)
