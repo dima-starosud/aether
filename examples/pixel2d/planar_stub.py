@@ -81,15 +81,17 @@ ps = [Particle(0xFFFFFF, P0, (x1, y1))
       for y1 in range(0, Y, Z)
       if (x1, y1) != P0]
 
-P1 = (21    , Y/2  )
-P2 = (X - 22, Y/2  )
-P3 = (X/2   , 21    )
-P4 = (X/2   , Y - 22)
+PS = (
+    (21    , Y/2  ),
+    (X/2   , Y - 22),
+    (X - 22, Y/2  ),
+    (X/2   , 21    )
+)
 
 MIRRORS = {}
-PS = [P1 + P4, P4 + P2, P2 + P3, P3 + P1]
-for args in PS:
-    MIRRORS.update(createMirrorPoints(*args))
+PSS = zip(PS, (PS[-1],) + PS[:-1])
+for args1, args2 in PSS:
+    MIRRORS.update(createMirrorPoints(*(args1 + args2)))
 
 for x, y in MIRRORS.keys():
     MIRRORS[(x, y - 1)] = MIRRORS[(x, y)]
