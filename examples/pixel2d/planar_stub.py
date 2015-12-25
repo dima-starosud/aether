@@ -29,6 +29,7 @@ def line(x, y, x1, y1, reflect = True):
 
 class Particle:
     def __init__(self, color, p0, p1):
+        self.ps = (p0, p1)
         self.color = color
         self.points = line(*(p0 + p1))
 
@@ -109,7 +110,7 @@ if __name__ == "__main__":
                 print "temporary", x, y, p.color
                 ps1.append(p)
             else:
-                sys.stderr.write("Light has gone: (%s, %s)\n" % (x, y))
+                sys.stderr.write("Light %s has gone: (%s, %s)\n" % (p.ps, x, y))
         ps = ps1
         sys.stdout.flush()
         time.sleep(0.0)

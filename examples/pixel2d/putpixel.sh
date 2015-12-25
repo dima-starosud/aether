@@ -1,2 +1,2 @@
 nim c --out:putpixel.exe putpixel.nim
-python planar_stub.py | ./putpixel.exe 2
+python planar_stub.py | ./putpixel.exe 4
