@@ -27,8 +27,14 @@ let
   ss = newScreenSurface(w, h)
 
 
-proc fillRect(x: int, y: int, c: Color) =
-  let rect = (x: zoom * x, y: zoom * y, width: zoom, height: zoom)
+type
+  Pos = (int, int)
+
+
+proc fillRect(p: Pos, c: Color) =
+  let
+    (x, y) = p
+    rect = (x: zoom * x, y: zoom * y, width: zoom, height: zoom)
   ss.fillRect(rect, c)
   sdl.updateRect(ss.s, int32(rect.x), int32(rect.y), int32(rect.width), int32(rect.height))
 
@@ -38,15 +44,14 @@ proc newSet[A](): ref HashSet[A] =
   result[] = initSet[A]()
 
 
-type
-  Pos = (int, int)
-
 let
+  refresh_timeout = 0.025 # 25 millis; 40 ~fps
   bg = newTable[Pos, Color]()
 
 var
-  fg1 = newSet[Pos]()
-  fg2 = newSet[Pos]()
+  fgw = newSet[Pos]()
+  fgr = newSet[Pos]()
+  last_refresh = epochTime()
 
 
 for line in stdin.lines:
@@ -56,12 +61,20 @@ for line in stdin.lines:
     (x, y, c0) = params.get(1..3).map(parseInt)
     p = (x, y)
     c = colors.Color(c0)
-  fillRect(x, y, c)
+  fillRect(p, c)
   case kind:
     of "permanent":
       bg[p] = c
     of "temporary":
-      fg1[].excl(p)
-      fg2[].incl(p)
+      fgw[].incl(p)
+      fgr[].excl(p)
     else:
       raise newException(ValueError, "Unexpected message kind " & kind)
+  let
+    now = epochTime()
+  if now > last_refresh + refresh_timeout:
+    last_refresh = now
+    for p in fgr[]:
+      fillRect(p, bg.getOrDefault(p))
+    fgr = fgw
+    fgw = newSet[Pos]()
