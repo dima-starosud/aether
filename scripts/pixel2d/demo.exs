@@ -108,7 +108,8 @@ defmodule Main do
       h = handler(id)
       w = case @start_light[id] do
             {to, color} ->
-              [%Radiate{to: to, wave: Light.create(id, to, color), after: @start_timeout}]
+              {to, wave} = Light.create(id, to, color) |> Light.move()
+              [%Radiate{to: to, wave: wave, after: @start_timeout}]
             nil ->
               []
           end
