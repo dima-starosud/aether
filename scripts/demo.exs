@@ -71,7 +71,7 @@ defmodule Main do
 
     def handle_light(wave) do
       {to, wave} = Light.move(wave)
-      {nil, [%Radiate{to: to, wave: wave, after: 0}]}
+      {nil, [%Radiate{to: to, wave: wave, after: 5}]}
     end
   end
 
