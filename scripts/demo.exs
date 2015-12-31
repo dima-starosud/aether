@@ -36,10 +36,6 @@ defmodule Main do
       end
       %Light{l | direct: {dx, dy}}
     end
-
-    def reverse(%Light{direct: {dx, dy}} = l) do
-      %Light{l | direct: {-dx, -dy}}
-    end
   end
 
 
@@ -67,27 +63,40 @@ defmodule Main do
     end
 
     def reverse(_from, _to, wave) do
-      wave = Light.reverse(wave)
-      handle_light(wave)
+      wave |>
+        Light.mirror(:horizontal) |>
+        Light.mirror(:vertical) |>
+        handle_light()
     end
 
     def handle_light(wave) do
-      :timer.sleep(50)
       {to, wave} = Light.move(wave)
-      {nil, [%Radiate{to: to, wave: wave}]}
+      {nil, [%Radiate{to: to, wave: wave, after: 0}]}
     end
   end
 
 
-  @x 80
-  @y 60
-  @zoom "20"
+  @x 160
+  @y 120
+  @zoom "10"
 
   @start_timeout 10000
 
-  @start_light %{
-    {1, 1} => {{2, 2}, 0xFFFFFF}
-  }
+  def start_light(id) do
+    from = {x0, y0} = {div(@x, 2), div(@y, 2)}
+    waves = for dx <- -5..5, sy <- [-1, 1] do
+      dx = 1000 * dx
+      dy = 1000 * sy
+      to = {x0 + dx, y0 + dy}
+      color = 0xFFFFFF
+      {to, wave} = Light.create(from, to, color) |> Light.move()
+      %Radiate{to: to, wave: wave, after: @start_timeout}
+    end
+    case id do
+      ^from -> waves
+      _ -> []
+    end
+  end
 
   def handler(id) do
     case id do
@@ -106,13 +115,7 @@ defmodule Main do
     for x <- 0..@x, y <- 0..@y do
       id = {x, y}
       h = handler(id)
-      w = case @start_light[id] do
-            {to, color} ->
-              {to, wave} = Light.create(id, to, color) |> Light.move()
-              [%Radiate{to: to, wave: wave, after: @start_timeout}]
-            nil ->
-              []
-          end
+      w = start_light(id)
       [id, h, w]
     end
   end
