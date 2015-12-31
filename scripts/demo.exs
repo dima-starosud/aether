@@ -82,19 +82,18 @@ defmodule Main do
 
   @start_timeout 10000
 
-  def start_light(id) do
-    from = {x0, y0} = {div(@x, 2), div(@y, 2)}
-    waves = for dx <- -5..5, sy <- [-1, 1] do
-      dx = 1000 * dx
-      dy = 1000 * sy
-      to = {x0 + dx, y0 + dy}
-      color = 0xFFFFFF
-      {to, wave} = Light.create(from, to, color) |> Light.move()
-      %Radiate{to: to, wave: wave, after: @start_timeout}
-    end
-    case id do
-      ^from -> waves
-      _ -> []
+  def start_light(from) do
+    if from == ({x0, y0} = {div(@x, 2), div(@y, 2)}) do
+      for dx <- -5..5, dy <- [-1, 1] do
+        dx = 1000 * dx
+        dy = 1000 * dy
+        to = {x0 + dx, y0 + dy}
+        color = 0xFFFFFF
+        {to, wave} = Light.create(from, to, color) |> Light.move()
+        %Radiate{to: to, wave: wave, after: @start_timeout}
+      end
+    else
+      []
     end
   end
 
