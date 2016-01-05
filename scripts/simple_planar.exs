@@ -78,22 +78,27 @@ defmodule Main do
 
   @x 160
   @y 120
+  @x0 div(@x, 2)
+  @y0 div(@y, 2)
   @zoom "10"
 
   @start_timeout 10000
 
   def start_light(from) do
-    if from == ({x0, y0} = {div(@x, 2), div(@y, 2)}) do
-      for dx <- -5..5, dy <- [-1, 1] do
-        dx = 1000 * dx
-        dy = 1000 * dy
-        to = {x0 + dx, y0 + dy}
-        color = 0xFFFFFF
-        {to, wave} = Light.create(from, to, color) |> Light.move()
-        %Radiate{to: to, wave: wave, after: @start_timeout}
-      end
-    else
-      []
+    case from do
+      {x, y} when x in [0, @x] or y in [0, @y] ->
+        [%Radiate{wave: 0xFF0000}]
+      {@x0, @y0} ->
+        for dx <- -5..5, dy <- [-1, 1] do
+          dx = 1000 * dx
+          dy = 1000 * dy
+          to = {@x0 + dx, @y0 + dy}
+          color = 0xFFFFFF
+          {to, wave} = Light.create(from, to, color) |> Light.move()
+          %Radiate{to: to, wave: wave, after: @start_timeout}
+        end
+      {_, _} ->
+        []
     end
   end
 
@@ -139,8 +144,13 @@ defmodule Main do
   def loop(pp) do
     receive do
       msg ->
-        {:radiation, {x, y}, _to, wave} = msg
-        true = Port.command(pp, "temporary #{x} #{y} #{Light.color(wave)}\n")
+        {:radiation, {x, y}, to, wave} = msg
+        {kind, color} = if to == nil do
+          {"permanent", wave}
+        else
+          {"temporary", Light.color(wave)}
+        end
+        true = Port.command(pp, "#{kind} #{x} #{y} #{color}\n")
     end
     loop(pp)
   end
