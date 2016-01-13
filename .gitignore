@@ -4,3 +4,10 @@
 erl_crash.dump
 *.ez
 *~
+
+nimcache
+*.exe
+
+*.pyc
+
+.idea
