@@ -38,14 +38,14 @@ defmodule Aether.Cell do
     {:ok, state}
   end
 
-  defp radiate_wave(from, to, wave) do
-    Logger.info("Radiation #{inspect from} ===> #{inspect wave} ===> #{inspect to}")
-    :gproc.send(listener_prop(from), {:radiation, from, to, wave})
+  defp radiate(from, to, radiation) do
+    Logger.info("Radiation #{inspect from} ===> #{inspect radiation} ===> #{inspect to}")
+    :gproc.send(listener_prop(from), {:radiation, from, to, radiation})
     case :gproc.lookup_local_name(cell_name(to)) do
       :undefined ->
         Logger.warn("Radiation failed. Cell #{inspect to} currently unavailable.")
       pid ->
-        GenServer.cast(pid, {:wave, from, wave})
+        GenServer.cast(pid, {:radiation, from, radiation})
     end
   end
 
@@ -53,7 +53,7 @@ defmodule Aether.Cell do
     Logger.info("Schedule radiations #{inspect radiations} from #{inspect from}")
     Enum.each radiations, fn r ->
       :timer.apply_after(r.after || 0, :erlang, :apply,
-        [&radiate_wave/3, [from, r.to, r.wave]])
+        [&radiate/3, [from, r.to, r.radiation]])
     end
   end
 
@@ -61,9 +61,9 @@ defmodule Aether.Cell do
     {:noreply, state}
   end
 
-  def handle_cast({:wave, from, wave}, state) do
-    Logger.info("Received wave #{inspect wave} from #{inspect from}.")
-    {handler, radiations} = state.handler.(from, state.id, wave)
+  def handle_cast({:radiation, from, radiation}, state) do
+    Logger.info("Received radiation #{inspect radiation} from #{inspect from}.")
+    {handler, radiations} = state.handler.(from, state.id, radiation)
     if handler do
       state = %Cell{state | handler: handler}
     end

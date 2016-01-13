@@ -5,18 +5,18 @@ defmodule AetherTest.CellTest do
 		:timer.start()
 	end
 
-  test "cell sends initial waves to handler" do
+  test "cell sends initial radiations to handler" do
 		expected = {make_ref, self}
-		radiate = %Aether.Radiate{to: :unique_id, wave: expected}
+		radiate = %Aether.Radiate{to: :unique_id, radiation: expected}
 		Aether.Cell.start_link(:unique_id, redirect(self()), [radiate])
 		assert_receive ^expected
   end
 
-	test "cell broadcasts handler output waves" do
+	test "cell broadcasts handler output radiations" do
 		[expected1, expected2] = exps =
 			Enum.map([1, 2], &({make_ref, self, &1}))
 		[radiate1, radiate2] =
-			Enum.map(exps, &(%Aether.Radiate{to: :unique_id, wave: &1}))
+			Enum.map(exps, &(%Aether.Radiate{to: :unique_id, radiation: &1}))
 		Aether.Cell.start_link(:unique_id, redirect(self(), [radiate2]), [radiate1])
 		assert_receive ^expected1
 		assert_receive ^expected2
@@ -24,19 +24,19 @@ defmodule AetherTest.CellTest do
 	end
 
 	test "cell changes its handler if needed" do
-		radiate = %Aether.Radiate{to: :unique_id, wave: :some_dummy_wave}
+		radiate = %Aether.Radiate{to: :unique_id, radiation: :some_dummy_radiation}
 		expected = {:done, ref = make_ref}
 		Aether.Cell.start_link(:unique_id, counter(self(), ref, 3), [radiate])
 		assert_receive ^expected
 	end
 
 	test "cells communicate to each other" do
-		wave2two = make_ref
-		wave2one = make_ref
-		Aether.Cell.start_link(:one, redirect(self(), [%Aether.Radiate{to: :two, wave: wave2two}]))
-		Aether.Cell.start_link(:two, redirect(self()), [%Aether.Radiate{to: :one, wave: wave2one}])
-		assert_receive ^wave2one
-		assert_receive ^wave2two
+		radiation2two = make_ref
+		radiation2one = make_ref
+		Aether.Cell.start_link(:one, redirect(self(), [%Aether.Radiate{to: :two, radiation: radiation2two}]))
+		Aether.Cell.start_link(:two, redirect(self()), [%Aether.Radiate{to: :one, radiation: radiation2one}])
+		assert_receive ^radiation2one
+		assert_receive ^radiation2two
 	end
 
 	test "cell id is unique" do
@@ -50,27 +50,27 @@ defmodule AetherTest.CellTest do
   test "listener reports messages" do
     from = :unique_id
     to = :some_other_cell
-    wave = make_ref
+    radiation = make_ref
     :ok = Aether.Cell.subscribe(from)
-    Aether.Cell.start_link(from, redirect(self()), [%Aether.Radiate{to: to, wave: wave}])
-    assert_receive {:radiation, ^from, ^to, ^wave}
+    Aether.Cell.start_link(from, redirect(self()), [%Aether.Radiate{to: to, radiation: radiation}])
+    assert_receive {:radiation, ^from, ^to, ^radiation}
   end
 
 	def redirect(pid, mock \\ []) do
-		fn _from, _to, wave ->
-			send(pid, wave)
+		fn _from, _to, radiation ->
+			send(pid, radiation)
 			{nil, mock}
 		end
 	end
 
 	def counter(pid, ref, n) do
-		fn from, _to, wave ->
+		fn from, _to, radiation ->
 			n = n - 1
 			if n == 0 do
 				send(pid, {:done, ref})
 				{nil, []}
 			else
-				{counter(pid, ref, n), [%Aether.Radiate{to: from, wave: wave}]}
+				{counter(pid, ref, n), [%Aether.Radiate{to: from, radiation: radiation}]}
 			end
 		end
 	end

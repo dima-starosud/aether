@@ -1,3 +1,3 @@
 defmodule Aether.Radiate do
-	defstruct [:to, :after, :wave]
+	defstruct [:to, :after, :radiation]
 end

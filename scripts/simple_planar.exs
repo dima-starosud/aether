@@ -40,38 +40,38 @@ defmodule Main do
 
 
   defmodule Handler do
-    def vertical_mirror(x, {x, _}, _, wave) do
-      handle_light(wave)
+    def vertical_mirror(x, {x, _}, _, radiation) do
+      handle_light(radiation)
     end
 
-    def vertical_mirror(_, _, _, wave) do
-      wave = Light.mirror(wave, :vertical)
-      handle_light(wave)
+    def vertical_mirror(_, _, _, radiation) do
+      radiation = Light.mirror(radiation, :vertical)
+      handle_light(radiation)
     end
 
-    def horizontal_mirror(y, {_, y}, _, wave) do
-      handle_light(wave)
+    def horizontal_mirror(y, {_, y}, _, radiation) do
+      handle_light(radiation)
     end
 
-    def horizontal_mirror(_, _, _, wave) do
-      wave = Light.mirror(wave, :horizontal)
-      handle_light(wave)
+    def horizontal_mirror(_, _, _, radiation) do
+      radiation = Light.mirror(radiation, :horizontal)
+      handle_light(radiation)
     end
 
-    def transparent(_from, _to, wave) do
-      handle_light(wave)
+    def transparent(_from, _to, radiation) do
+      handle_light(radiation)
     end
 
-    def reverse(_from, _to, wave) do
-      wave |>
+    def reverse(_from, _to, radiation) do
+      radiation |>
         Light.mirror(:horizontal) |>
         Light.mirror(:vertical) |>
         handle_light()
     end
 
-    def handle_light(wave) do
-      {to, wave} = Light.move(wave)
-      {nil, [%Radiate{to: to, wave: wave, after: 5}]}
+    def handle_light(radiation) do
+      {to, radiation} = Light.move(radiation)
+      {nil, [%Radiate{to: to, radiation: radiation, after: 5}]}
     end
   end
 
@@ -87,15 +87,15 @@ defmodule Main do
   def start_light(from) do
     case from do
       {x, y} when x in [0, @x] or y in [0, @y] ->
-        [%Radiate{wave: 0xFF0000}]
+        [%Radiate{radiation: 0xFF0000}]
       {@x0, @y0} ->
         for dx <- -5..5, dy <- [-1, 1] do
           dx = 1000 * dx
           dy = 1000 * dy
           to = {@x0 + dx, @y0 + dy}
           color = 0xFFFFFF
-          {to, wave} = Light.create(from, to, color) |> Light.move()
-          %Radiate{to: to, wave: wave, after: @start_timeout}
+          {to, radiation} = Light.create(from, to, color) |> Light.move()
+          %Radiate{to: to, radiation: radiation, after: @start_timeout}
         end
       {_, _} ->
         []
@@ -144,11 +144,11 @@ defmodule Main do
   def loop(pp) do
     receive do
       msg ->
-        {:radiation, {x, y}, to, wave} = msg
+        {:radiation, {x, y}, to, radiation} = msg
         {kind, color} = if to == nil do
-          {"permanent", wave}
+          {"permanent", radiation}
         else
-          {"temporary", Light.color(wave)}
+          {"temporary", Light.color(radiation)}
         end
         true = Port.command(pp, "#{kind} #{x} #{y} #{color}\n")
     end
