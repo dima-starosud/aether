@@ -39,18 +39,13 @@ proc fillRect(p: Pos, c: Color) =
   sdl.updateRect(ss.s, int32(rect.x), int32(rect.y), int32(rect.width), int32(rect.height))
 
 
-proc newSet[A](): ref HashSet[A] =
-  new(result)
-  result[] = initSet[A]()
-
-
 let
   refresh_timeout = 0.025 # 25 millis; 40 ~fps
   bg = newTable[Pos, Color]()
 
 var
-  fgw = newSet[Pos]()
-  fgr = newSet[Pos]()
+  fgw = initSet[Pos]()
+  fgr = initSet[Pos]()
   last_refresh = epochTime()
 
 
@@ -66,15 +61,15 @@ for line in stdin.lines:
     of "permanent":
       bg[p] = c
     of "temporary":
-      fgw[].incl(p)
-      fgr[].excl(p)
+      fgw.incl(p)
+      fgr.excl(p)
     else:
       raise newException(ValueError, "Unexpected message kind " & kind)
   let
     now = epochTime()
   if now > last_refresh + refresh_timeout:
     last_refresh = now
-    for p in fgr[]:
+    for p in fgr:
       fillRect(p, bg.getOrDefault(p))
     fgr = fgw
-    fgw = newSet[Pos]()
+    fgw = initSet[Pos]()
