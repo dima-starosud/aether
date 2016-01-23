@@ -1,11 +1,19 @@
-defmodule Main do
+defmodule Planar.Main do
 
   require Logger
 
   alias Aether.Radiate
 
+  @x 160
+  @y 120
+  @x0 div(@x, 2)
+  @y0 div(@y, 2)
+  @zoom "10"
+
+  @start_timeout 10000
+
   defmodule Light do
-    defstruct [:pos, :direct, :zoom, :color]
+    defstruct [:pos, :direct, :zoom, :color, :src]
 
     def create({x0, y0}, {x1, y1}, color) do
       dx = x1 - x0
@@ -23,7 +31,7 @@ defmodule Main do
     def color(%Light{color: color}), do: color
 
     def move(%Light{pos: {x, y}, direct: {dx, dy}} = l) do
-      l = %Light{l | pos: {x + dx, y + dy}}
+      l = %Light{l | pos: {x + dx, y + dy}, src: current(l)}
       {current(l), l}
     end
 
@@ -38,105 +46,84 @@ defmodule Main do
     end
   end
 
-
-  defmodule Handler do
-    def vertical_mirror(x, {x, _}, _, radiation) do
-      handle_light(radiation)
-    end
-
-    def vertical_mirror(_, _, _, radiation) do
-      radiation = Light.mirror(radiation, :vertical)
-      handle_light(radiation)
-    end
-
-    def horizontal_mirror(y, {_, y}, _, radiation) do
-      handle_light(radiation)
-    end
-
-    def horizontal_mirror(_, _, _, radiation) do
-      radiation = Light.mirror(radiation, :horizontal)
-      handle_light(radiation)
-    end
-
-    def transparent(_from, _to, radiation) do
-      handle_light(radiation)
-    end
-
-    def reverse(_from, _to, radiation) do
-      radiation |>
-        Light.mirror(:horizontal) |>
-        Light.mirror(:vertical) |>
-        handle_light()
-    end
-
-    def handle_light(radiation) do
-      {to, radiation} = Light.move(radiation)
-      {nil, [%Radiate{to: to, radiation: radiation, after: 5}]}
-    end
-  end
-
-
-  @x 160
-  @y 120
-  @x0 div(@x, 2)
-  @y0 div(@y, 2)
-  @zoom "10"
-
-  @start_timeout 10000
-
-  def start_light(from) do
-    case from do
+  def data(id) do
+    case id do
       {x, y} when x in [0, @x] or y in [0, @y] ->
-        [%Radiate{radiation: 0xFF0000}]
-      {@x0, @y0} ->
-        for dx <- -5..5, dy <- [-1, 1] do
-          dx = 1000 * dx
-          dy = 1000 * dy
-          to = {@x0 + dx, @y0 + dy}
-          color = 0xFFFFFF
-          {to, radiation} = Light.create(from, to, color) |> Light.move()
-          %Radiate{to: to, radiation: radiation, after: @start_timeout}
-        end
+        mirror(id)
       {_, _} ->
-        []
+        nil
     end
   end
 
-  def handler(id) do
+  defp mirror(id) do
     case id do
       corner when corner in [{0, 0}, {0, @y}, {@x, 0}, {@x, @y}] ->
-        &Handler.reverse/3
+        :reverse_mirror
       {x, _} when x in [0, @x] ->
-        &(Handler.vertical_mirror(x, &1, &2, &3))
+        :vertical_mirror
       {_, y} when y in [0, @y] ->
-        &(Handler.horizontal_mirror(y, &1, &2, &3))
-      {_, _} ->
-        &Handler.transparent/3
+        :horizontal_mirror
     end
   end
 
-  def cellsData do
-    for x <- 0..@x, y <- 0..@y do
-      id = {x, y}
-      h = handler(id)
-      w = start_light(id)
-      [id, h, w]
+  def initial_light() do
+    for dx <- -5..5, dy <- [-1, 1] do
+      dx = 1000 * dx
+      dy = 1000 * dy
+      to = {@x0 + dx, @y0 + dy}
+      color = 0xFFFFFF
+      {to, radiation} = Light.create({@x0, @y0}, to, color) |> Light.move()
+      Aether.Cell.radiate(to, radiation)
     end
   end
+
+  def handle({x1, _}, :vertical_mirror, %Light{src: {x2, _}} = r) when x1 != x2 do
+    r |> Light.mirror(:vertical) |> move_light()
+  end
+
+  def handle({_, y1}, :horizontal_mirror, %Light{src: {_, y2}} = r) when y1 != y2 do
+    r |> Light.mirror(:horizontal) |> move_light()
+  end
+
+  def handle(_, :reverse_mirror, %Light{} = r) do
+    r |> Light.mirror(:vertical) |> Light.mirror(:horizontal) |> move_light()
+  end
+
+  def handle(_, nil, %Light{} = r) do
+    move_light(r)
+  end
+
+  def move_light(radiation) do
+    {to, radiation} = Light.move(radiation)
+    [%Radiate{to: to, radiation: radiation, after: 5}]
+  end
+
+  def genIds do
+    for x <- 0..@x, y <- 0..@y do
+      {x, y}
+    end
+  end
+
 
   def start do
     Logger.info("Building cells data")
-    cells = cellsData
-    Logger.info("Subscribing")
-    for c <- cells do
-      Aether.Cell.subscribe(hd(c))
-    end
+    ids = genIds
+    Logger.info("Subscribing...")
+    Enum.each(ids, &Aether.Cell.subscribe/1)
     Logger.info("Starting cells")
+    handler = &Planar.Main.handle/3
+    cells = Enum.map(ids, &[&1, handler, data(&1)])
     Aether.Cell.Supervisor.start_link(cells)
     Logger.info("Spawning UI")
     putpixel = Path.join(__DIR__, "putpixel.exe")
     pp = Port.open({:spawn_executable, putpixel}, [{:cd, __DIR__}, {:args, [@zoom]}, {:line, 256}])
     true = Port.command(pp, "#{@x + 1} #{@y + 1}\n")
+    Logger.info("Draw mirrors")
+    ids |> Enum.each(fn id ->
+      if data(id), do: send(self, {:radiation, id, nil, 0xFF0000})
+    end)
+    Logger.info("Triggering handlers")
+    initial_light()
     Logger.info("Listener loop")
     loop(pp)
   end
@@ -158,4 +145,4 @@ defmodule Main do
 end
 
 
-Main.start
+Planar.Main.start
