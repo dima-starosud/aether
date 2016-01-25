@@ -1,4 +1,4 @@
-defmodule Planar.Main do
+defmodule Planar.Simple do
 
   require Logger
 
@@ -111,7 +111,7 @@ defmodule Planar.Main do
     Logger.info("Subscribing...")
     Enum.each(ids, &Aether.Cell.subscribe/1)
     Logger.info("Starting cells")
-    handler = &Planar.Main.handle/3
+    handler = &Planar.Simple.handle/3
     cells = Enum.map(ids, &[&1, handler, data(&1)])
     Aether.Cell.Supervisor.start_link(cells)
     Logger.info("Spawning UI")
@@ -145,4 +145,4 @@ defmodule Planar.Main do
 end
 
 
-Planar.Main.start
+Planar.Simple.start
