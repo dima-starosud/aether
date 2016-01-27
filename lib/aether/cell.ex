@@ -2,15 +2,17 @@ defmodule Aether.Cell do
   use GenServer
   require Logger
 
-  alias __MODULE__
-  defstruct [:id, :handler]
+  alias Aether.Radiate
 
-  def start(id, handler, radiations \\ []) do
-    GenServer.start(Cell, [id, handler, radiations])
+  alias __MODULE__
+  defstruct [:id, :handler, :data]
+
+  def start(id, handler, data \\ nil) do
+    GenServer.start(Cell, [id, handler, data])
   end
 
-  def start_link(id, handler, radiations \\ []) do
-    GenServer.start_link(Cell, [id, handler, radiations])
+  def start_link(id, handler, data \\ nil) do
+    GenServer.start_link(Cell, [id, handler, data])
   end
 
   defmacrop listener_prop(id) do
@@ -30,49 +32,55 @@ defmodule Aether.Cell do
     :ok
   end
 
-  def init([id, handler, radiations]) do
-    Logger.info("New cell #{inspect id} initialization with #{inspect handler}. Initial radiations: #{inspect radiations}")
+  def init([id, handler, data]) do
+    Logger.info("New cell #{inspect id} initialization with #{inspect handler}.")
     true = :gproc.add_local_name(cell_name(id))
-    state = %Cell{id: id, handler: handler}
-    schedule_radiation(id, radiations)
-    {:ok, state}
+    {:ok, %Cell{id: id, handler: handler, data: data}}
+  end
+
+  defp handle_radiation(%Cell{id: id, handler: handler, data: data} = state, radiation) do
+    process_handler_output(state, handler.(id, data, radiation))
+  end
+
+  defp process_handler_output(state, {radiations, data}) do
+    schedule_radiations(state.id, radiations)
+    %Cell{state | data: data}
+  end
+
+  defp process_handler_output(state, radiations) when is_list(radiations) do
+    schedule_radiations(state.id, radiations)
+    state
+  end
+
+  def radiate(to, radiation) do
+    pid = :gproc.lookup_local_name(cell_name(to))
+    if is_pid(pid) do
+      GenServer.cast(pid, {:radiation, radiation})
+    end
+    :ok
   end
 
   defp radiate(from, to, radiation) do
-    Logger.info("Radiation #{inspect from} ===> #{inspect radiation} ===> #{inspect to}")
     :gproc.send(listener_prop(from), {:radiation, from, to, radiation})
-    case :gproc.lookup_local_name(cell_name(to)) do
-      :undefined ->
-        Logger.warn("Radiation failed. Cell #{inspect to} currently unavailable.")
-      pid ->
-        GenServer.cast(pid, {:radiation, from, radiation})
+    radiate(to, radiation)
+  end
+
+  defp schedule_radiations(from, radiations) do
+    Enum.each radiations, fn %Radiate{to: t, radiation: r, after: a} ->
+      :timer.apply_after(a || 5, :erlang, :apply, [&radiate/3, [from, t, r]])
     end
   end
 
-  defp schedule_radiation(from, radiations) do
-    Logger.info("Schedule radiations #{inspect radiations} from #{inspect from}")
-    Enum.each radiations, fn r ->
-      :timer.apply_after(r.after || 0, :erlang, :apply,
-        [&radiate/3, [from, r.to, r.radiation]])
-    end
-  end
-
-  def handle_call(_, _from, state) do
-    {:noreply, state}
-  end
-
-  def handle_cast({:radiation, from, radiation}, state) do
-    Logger.info("Received radiation #{inspect radiation} from #{inspect from}.")
-    {handler, radiations} = state.handler.(from, state.id, radiation)
-    if handler do
-      state = %Cell{state | handler: handler}
-    end
-    schedule_radiation(state.id, radiations)
-    {:noreply, state}
+  def handle_cast({:radiation, radiation}, state) do
+    {:noreply, handle_radiation(state, radiation)}
   end
 
   def handle_cast(any, state) do
     Logger.warn("Unknown cast message: #{inspect any}")
+    {:noreply, state}
+  end
+
+  def handle_call(_, _from, state) do
     {:noreply, state}
   end
 
